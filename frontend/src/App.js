@@ -370,7 +370,7 @@ function App() {
                 </div>
               </div>
 
-              {/* NEW: Action Recommendation Panel (only for PASS decisions) */}
+              {/* Action Recommendation Panel with Confidence (only for PASS decisions) */}
               {result.decision === 'PASS' && result.recommended_action && (
                 <div className="action-recommendation">
                   <h3>
@@ -383,6 +383,41 @@ function App() {
                     <div className="action-reasoning">
                       {result.action_reasoning}
                     </div>
+                    
+                    {/* NEW: Action Confidence Display */}
+                    {result.action_confidence !== null && result.action_confidence !== undefined && (
+                      <div className="action-confidence-section">
+                        <div className="confidence-header">
+                          <span className="confidence-label">Recommendation Confidence:</span>
+                          <span className={`confidence-badge ${result.confidence_level?.toLowerCase().replace(' ', '-')}`}>
+                            {result.confidence_level} ({(result.action_confidence * 100).toFixed(0)}%)
+                          </span>
+                        </div>
+                        <div className="confidence-reasoning">
+                          {result.confidence_reasoning}
+                        </div>
+                        {result.confidence_factors && (
+                          <div className="confidence-factors">
+                            <div className="factor-row">
+                              <span>Base Confidence:</span>
+                              <span>{(result.confidence_factors.base_confidence * 100).toFixed(0)}%</span>
+                            </div>
+                            <div className="factor-row">
+                              <span>Probability Gap:</span>
+                              <span>{(result.confidence_factors.probability_threshold_gap * 100).toFixed(1)}%</span>
+                            </div>
+                            {result.confidence_factors.total_adjustment !== 0 && (
+                              <div className="factor-row">
+                                <span>Adjustments:</span>
+                                <span style={{ color: result.confidence_factors.total_adjustment > 0 ? '#10b981' : '#ef4444' }}>
+                                  {result.confidence_factors.total_adjustment > 0 ? '+' : ''}{(result.confidence_factors.total_adjustment * 100).toFixed(0)}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -521,6 +556,89 @@ function App() {
           line-height: 1.6;
           color: #4a5568;
           font-weight: 500;
+        }
+
+        .action-confidence-section {
+          margin-top: 20px;
+          padding-top: 20px;
+          border-top: 2px solid #e2e8f0;
+        }
+
+        .confidence-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .confidence-label {
+          font-weight: 600;
+          color: #2d3748;
+          font-size: 1.05em;
+        }
+
+        .confidence-badge {
+          padding: 6px 14px;
+          border-radius: 20px;
+          font-weight: bold;
+          font-size: 0.95em;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .confidence-badge.very-high {
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+        }
+
+        .confidence-badge.high {
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          color: white;
+        }
+
+        .confidence-badge.moderate {
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+          color: white;
+        }
+
+        .confidence-badge.low {
+          background: linear-gradient(135deg, #ef4444, #dc2626);
+          color: white;
+        }
+
+        .confidence-reasoning {
+          font-size: 0.95em;
+          line-height: 1.5;
+          color: #4a5568;
+          font-style: italic;
+          margin-bottom: 12px;
+        }
+
+        .confidence-factors {
+          background: #f7fafc;
+          padding: 12px;
+          border-radius: 6px;
+          border: 1px solid #e2e8f0;
+          margin-top: 12px;
+        }
+
+        .factor-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 6px 0;
+          font-size: 0.9em;
+        }
+
+        .factor-row span:first-child {
+          color: #718096;
+          font-weight: 500;
+        }
+
+        .factor-row span:last-child {
+          font-weight: bold;
+          color: #2d3748;
         }
 
         .quality-breakdown,

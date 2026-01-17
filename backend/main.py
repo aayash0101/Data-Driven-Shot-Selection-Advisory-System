@@ -788,7 +788,9 @@ async def predict_shot(request: ShotRequest):
             contest_level=request.contest_level
         )
         
-        
+        # ====================================================================
+        # STEP 6: Generate action recommendation for PASS decisions
+        # ====================================================================
         recommended_action = None
         action_reasoning = None
         action_confidence_score = None

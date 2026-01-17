@@ -246,7 +246,7 @@ class ActionRecommender:
             return (
                 RecommendedAction.LOOK_INSIDE,
                 "The defender is contesting your mid-range look. "
-                "Scan for a cutting teammate or post entry—paint touches often lead to better shots or free throws."
+                "Scan for a cutting teammate or post entry paint touches often lead to better shots or free throws."
             )
         
         # =================================================================
@@ -284,7 +284,7 @@ class ActionRecommender:
                 return (
                     RecommendedAction.RESET_OFFENSE,
                     f"This three-pointer shows {make_probability:.1%} probability with {time_remaining}s remaining. "
-                    "Run another action to create a better look—penetrate and kick, or set a ball screen."
+                    "Run another action to create a better look penetrate and kick, or set a ball screen."
                 )
             else:
                 return (
