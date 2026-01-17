@@ -1,0 +1,14 @@
+# Root-level requirements for convenience
+# Install ML and backend dependencies separately
+
+# ML Requirements
+# See ml/requirements.txt
+
+# Backend Requirements  
+# See backend/requirements.txt
+
+# To install all:
+# pip install -r ml/requirements.txt
+# pip install -r backend/requirements.txt
+
+

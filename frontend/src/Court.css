@@ -1,0 +1,63 @@
+.court-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.court-svg {
+  cursor: crosshair;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 
+              0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.court-svg:hover {
+  transform: scale(1.01);
+}
+
+.court-hint {
+  margin-top: 1rem;
+  font-size: 1rem;
+  color: #ffffff;
+  text-align: center;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.contest-indicator {
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.contest-indicator.tight {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.contest-indicator.contested {
+  background-color: #fed7aa;
+  color: #9a3412;
+}
+
+.contest-indicator.open {
+  background-color: #fef3c7;
+  color: #854d0e;
+}
+
+.contest-indicator.wide-open {
+  background-color: #d1fae5;
+  color: #065f46;
+}
