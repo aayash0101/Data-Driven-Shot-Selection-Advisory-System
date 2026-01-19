@@ -16,6 +16,9 @@ function App() {
   // Defender state
   const [defenderDistance, setDefenderDistance] = useState(null);
   const [contestLevel, setContestLevel] = useState('OPEN');
+  
+  // NEW: Explanation mode state
+  const [explanationMode, setExplanationMode] = useState('player');
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -60,7 +63,8 @@ function App() {
       secs_left: secsLeft,
       position: position,
       defender_distance: defDist,
-      contest_level: contest
+      contest_level: contest,
+      mode: explanationMode  // Include explanation mode
     };
 
     try {
@@ -285,6 +289,17 @@ function App() {
             </label>
           </div>
 
+          {/* NEW: Explanation Mode Toggle */}
+          <div className="input-group">
+            <label>
+              Explanation Mode:
+              <select value={explanationMode} onChange={(e) => setExplanationMode(e.target.value)}>
+                <option value="player">🏀 Player Mode (Quick)</option>
+                <option value="coach">📋 Coach Mode (Detailed)</option>
+              </select>
+            </label>
+          </div>
+
           <button
             className="predict-button"
             onClick={() => handlePredict()}
@@ -361,12 +376,30 @@ function App() {
                 </div>
 
                 <div className="explanation">
-                  <h4>Explanation:</h4>
+                  <h4>
+                    {explanationMode === 'player' ? '🏀 Player Explanation' : '📋 Coach Analysis'}
+                  </h4>
                   <ul>
-                    {result.explanation.map((exp, idx) => (
+                    {result.explanation && result.explanation[explanationMode] && 
+                     result.explanation[explanationMode].map((exp, idx) => (
                       <li key={idx}>{exp}</li>
                     ))}
                   </ul>
+                  
+                  {/* Show coaching insight if available */}
+                  {result.explanation && result.explanation.coaching_insight && (
+                    <div className="coaching-insight">
+                      <strong>💡 Coaching Insight:</strong>
+                      <p>{result.explanation.coaching_insight}</p>
+                    </div>
+                  )}
+                  
+                  {/* Mode switcher hint */}
+                  <div className="mode-switcher-hint">
+                    Currently viewing <strong>{explanationMode === 'player' ? 'Player' : 'Coach'}</strong> mode.
+                    Switch to {explanationMode === 'player' ? 'Coach' : 'Player'} mode using the dropdown above for 
+                    {explanationMode === 'player' ? ' detailed analysis' : ' quick, actionable advice'}.
+                  </div>
                 </div>
               </div>
 
@@ -713,6 +746,43 @@ function App() {
           font-size: 0.9em;
           color: #718096;
           line-height: 1.5;
+        }
+
+        .coaching-insight {
+          margin-top: 16px;
+          padding: 16px;
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          border-left: 4px solid #f59e0b;
+          border-radius: 6px;
+        }
+
+        .coaching-insight strong {
+          color: #92400e;
+          display: block;
+          margin-bottom: 8px;
+          font-size: 1.05em;
+        }
+
+        .coaching-insight p {
+          margin: 0;
+          color: #78350f;
+          line-height: 1.6;
+          font-weight: 500;
+        }
+
+        .mode-switcher-hint {
+          margin-top: 16px;
+          padding: 12px;
+          background: #f0f9ff;
+          border: 1px solid #bfdbfe;
+          border-radius: 6px;
+          font-size: 0.9em;
+          color: #1e40af;
+          line-height: 1.5;
+        }
+
+        .mode-switcher-hint strong {
+          color: #1e3a8a;
         }
       `}</style>
     </div>

@@ -8,7 +8,7 @@ Version 3.3 - Added confidence scoring for action recommendations
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, Literal, Dict
+from typing import Optional, Literal, Dict, Any  # FIXED: Added 'Any' import
 from enum import Enum
 import pickle
 import numpy as np
@@ -35,8 +35,11 @@ from coach_feedback import generate_coach_feedback
 # Import action recommender
 from action_recommender import get_action_recommendation
 
-# Import NEW action confidence calculator
+# Import action confidence calculator
 from action_confidence import compute_action_confidence
+
+# Import NEW dual-mode explanation formatter
+from explanation_formatter import format_dual_mode_explanation
 
 app = FastAPI(title="Shot Selection Advisory API v3.3")
 
@@ -76,6 +79,9 @@ class ShotRequest(BaseModel):
     # Defender data (optional for backward compatibility)
     defender_distance: Optional[float] = None
     contest_level: Optional[str] = "OPEN"
+    
+    # NEW: Explanation mode
+    mode: Optional[Literal["player", "coach"]] = "player"
 
 
 class ShotResponse(BaseModel):
@@ -84,7 +90,7 @@ class ShotResponse(BaseModel):
     make_probability: float
     threshold: float
     confidence: float
-    explanation: list
+    explanation: Dict[str, Any]  # FIXED: Changed 'any' to 'Any'
     
     # Contest info in response
     contest_level: Optional[str] = None
@@ -100,7 +106,7 @@ class ShotResponse(BaseModel):
     recommended_action: Optional[str] = None
     action_reasoning: Optional[str] = None
     
-    # NEW: Action confidence fields
+    # Action confidence fields
     action_confidence: Optional[float] = None
     confidence_level: Optional[str] = None
     confidence_reasoning: Optional[str] = None
@@ -226,23 +232,28 @@ async def root():
     """Root endpoint."""
     return {
         "message": "Shot Selection Advisory API",
-        "version": "3.3-action-confidence",
+        "version": "3.4-dual-mode-explanations",
         "features": [
             "ML-based shot prediction",
             "Defender impact modeling (continuous + discrete)",
             "Shot quality breakdown with defensive pressure",
-            "Natural language coach feedback system",
+            "Dual-mode explanations (Player vs Coach)",
             "Action-based recommendations for PASS decisions",
             "Confidence scoring for recommended actions",
             "Contest-aware decision thresholds"
         ],
+        "modes": {
+            "player": "Short, action-focused explanations for in-game use",
+            "coach": "Detailed, analytical explanations for teaching and review"
+        },
         "endpoints": {
-            "/predict-shot": "POST - Predict shot selection advice with coach feedback and action recommendations",
+            "/predict-shot": "POST - Predict shot selection advice with dual-mode explanations",
             "/health": "GET - Health check",
             "/defender-impact-demo": "GET - Demo defender impact calculations",
             "/feedback-examples": "GET - Demo coach feedback system",
             "/action-examples": "GET - Demo action recommendation system",
-            "/confidence-examples": "GET - Demo action confidence scoring"
+            "/confidence-examples": "GET - Demo action confidence scoring",
+            "/explanation-examples": "GET - Demo dual-mode explanation system"
         }
     }
 
@@ -262,8 +273,8 @@ async def health():
         }
     return {
         "status": "ready", 
-        "message": "API is ready with defender modeling, coach feedback, action recommendations, and confidence scoring", 
-        "version": "3.3-action-confidence"
+        "message": "API is ready with defender modeling, dual-mode explanations, action recommendations, and confidence scoring", 
+        "version": "3.4-dual-mode-explanations"
     }
 
 
@@ -653,10 +664,89 @@ async def confidence_examples():
     }
 
 
+@app.get("/explanation-examples")
+async def explanation_examples():
+    """
+    NEW: Demo endpoint showing dual-mode explanation examples.
+    Compares Player Mode vs Coach Mode for the same predictions.
+    """
+    scenarios = [
+        {
+            "name": "PASS - Tight Contest on Deep Three",
+            "decision": "PASS",
+            "make_probability": 0.24,
+            "threshold": 0.35,
+            "shot_type": "3PT Field Goal",
+            "zone": "Above the Break 3",
+            "shot_distance": 28.0,
+            "time_remaining": 14,
+            "quarter": 2,
+            "defender_distance": 2.2,
+            "contest_level": "TIGHT",
+            "recommended_action": "Swing Pass"
+        },
+        {
+            "name": "TAKE - Wide Open Corner Three",
+            "decision": "TAKE SHOT",
+            "make_probability": 0.47,
+            "threshold": 0.35,
+            "shot_type": "3PT Field Goal",
+            "zone": "Left Corner 3",
+            "shot_distance": 23.0,
+            "time_remaining": 16,
+            "quarter": 3,
+            "defender_distance": 13.0,
+            "contest_level": "WIDE_OPEN",
+            "recommended_action": None
+        },
+        {
+            "name": "PASS - Inefficient Mid-Range",
+            "decision": "PASS",
+            "make_probability": 0.31,
+            "threshold": 0.41,
+            "shot_type": "2PT Field Goal",
+            "zone": "Mid-Range",
+            "shot_distance": 17.0,
+            "time_remaining": 12,
+            "quarter": 3,
+            "defender_distance": 5.0,
+            "contest_level": "CONTESTED",
+            "recommended_action": "Drive or Kick"
+        }
+    ]
+    
+    results = []
+    for scenario in scenarios:
+        dual_explanations = format_dual_mode_explanation(**scenario)
+        
+        results.append({
+            "scenario": scenario["name"],
+            "decision": scenario["decision"],
+            "context": {
+                "make_probability": f"{scenario['make_probability']:.1%}",
+                "threshold": f"{scenario['threshold']:.1%}",
+                "shot": f"{scenario['shot_type']} from {scenario['zone']}",
+                "defender": f"{scenario['defender_distance']:.1f} ft away ({scenario['contest_level']})"
+            },
+            "explanations": dual_explanations
+        })
+    
+    return {
+        "message": "Dual-Mode Explanation System Examples",
+        "description": "Compare Player Mode (action-focused) vs Coach Mode (analytical)",
+        "modes": {
+            "player": "Short, direct explanations for in-game decisions (1-2 points)",
+            "coach": "Detailed analysis for teaching and film review (3-5 points)",
+            "coaching_insight": "Single teaching moment connecting to broader principles"
+        },
+        "scenarios": results
+    }
+
+
 @app.post("/predict-shot", response_model=ShotResponse)
 async def predict_shot(request: ShotRequest):
     """
-    Predict shot selection advice with coach-like feedback, action recommendations,
+    Predict shot selection advice with dual-mode explanations, action recommendations,
     and confidence scoring.
     
     Workflow:
@@ -664,12 +754,12 @@ async def predict_shot(request: ShotRequest):
     2. Apply defender impact adjustment
     3. Compute shot quality breakdown with defensive pressure
     4. Get base advisory decision
-    5. Generate natural language coach feedback
+    5. [NEW] Generate dual-mode explanations (player + coach)
     6. If PASS decision, generate action recommendation
-    7. [NEW] Compute confidence score for recommended action
+    7. Compute confidence score for recommended action
     
-    Returns decision, probabilities, breakdown, explanations, recommended action,
-    and confidence assessment.
+    Returns decision, probabilities, breakdown, dual-mode explanations, 
+    recommended action, and confidence assessment.
     """
     if model is None or feature_engineer is None:
         raise HTTPException(
@@ -773,9 +863,25 @@ async def predict_shot(request: ShotRequest):
         )
         
         # ====================================================================
-        # STEP 5: Generate coach-like feedback
+        # STEP 5: Generate dual-mode explanations (player + coach)
         # ====================================================================
-        coach_explanations = generate_coach_feedback(
+        # First, we need to know what action will be recommended (for coaching insight)
+        temp_recommended_action = None
+        if base_advice['decision'] == 'PASS':
+            temp_action_rec = get_action_recommendation(
+                make_probability=adjusted_probability,
+                shot_type=request.shot_type,
+                zone=request.zone,
+                shot_distance=request.shot_distance,
+                time_remaining=time_remaining,
+                quarter=request.quarter,
+                defender_distance=request.defender_distance,
+                contest_level=request.contest_level
+            )
+            temp_recommended_action = temp_action_rec['action']
+        
+        # Generate dual-mode explanations
+        dual_explanations = format_dual_mode_explanation(
             decision=base_advice['decision'],
             make_probability=adjusted_probability,
             threshold=base_advice['threshold'],
@@ -785,7 +891,8 @@ async def predict_shot(request: ShotRequest):
             time_remaining=time_remaining,
             quarter=request.quarter,
             defender_distance=request.defender_distance,
-            contest_level=request.contest_level
+            contest_level=request.contest_level,
+            recommended_action=temp_recommended_action
         )
         
         # ====================================================================
@@ -799,6 +906,10 @@ async def predict_shot(request: ShotRequest):
         confidence_factors = None
         
         if base_advice['decision'] == 'PASS':
+            # We already generated this in step 5, reuse it
+            recommended_action = temp_recommended_action
+            
+            # Get full action recommendation details
             action_rec = get_action_recommendation(
                 make_probability=adjusted_probability,
                 shot_type=request.shot_type,
@@ -809,12 +920,10 @@ async def predict_shot(request: ShotRequest):
                 defender_distance=request.defender_distance,
                 contest_level=request.contest_level
             )
-            
-            recommended_action = action_rec['action']
             action_reasoning = action_rec['reasoning']
             
             # ================================================================
-            # STEP 7: NEW - Compute confidence for the recommended action
+            # STEP 7: Compute confidence for the recommended action
             # ================================================================
             confidence_result = compute_action_confidence(
                 make_probability=adjusted_probability,
@@ -843,7 +952,7 @@ async def predict_shot(request: ShotRequest):
             make_probability=adjusted_probability,
             threshold=base_advice['threshold'],
             confidence=base_advice['confidence'],
-            explanation=coach_explanations,
+            explanation=dual_explanations,  # Now returns dict with player/coach/insight
             contest_level=request.contest_level,
             defender_distance=request.defender_distance,
             shot_quality_breakdown=breakdown,
@@ -868,7 +977,7 @@ async def predict_shot(request: ShotRequest):
 if __name__ == "__main__":
     import uvicorn
     print("\n" + "="*70)
-    print("Shot Selection Advisory API v3.3 - Action Confidence System")
+    print("Shot Selection Advisory API v3.4 - Dual-Mode Explanations")
     print("="*70)
     print("\nStarting server...")
     print("Visit http://localhost:8000/docs for interactive API documentation")
@@ -876,5 +985,6 @@ if __name__ == "__main__":
     print("Visit http://localhost:8000/feedback-examples to see coach feedback examples")
     print("Visit http://localhost:8000/action-examples to see action recommendations")
     print("Visit http://localhost:8000/confidence-examples to see confidence scoring")
+    print("Visit http://localhost:8000/explanation-examples to see dual-mode explanations")
     print("\n")
     uvicorn.run(app, host="0.0.0.0", port=8000)

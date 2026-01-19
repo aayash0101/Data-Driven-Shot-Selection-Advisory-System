@@ -282,6 +282,7 @@ def get_coaching_insight(
     threshold: float,
     shot_type: str,
     zone: str,
+    shot_distance: float,  # FIXED: Added this parameter
     defender_distance: Optional[float] = None,
     contest_level: Optional[str] = None,
     recommended_action: Optional[str] = None
@@ -300,6 +301,7 @@ def get_coaching_insight(
         threshold: Decision threshold
         shot_type: Shot type
         zone: Shot zone
+        shot_distance: Distance from basket (FIXED: added)
         defender_distance: Distance to defender (optional)
         contest_level: Contest quality (optional)
         recommended_action: The recommended action (optional)
@@ -409,6 +411,7 @@ def format_dual_mode_explanation(
         threshold=threshold,
         shot_type=shot_type,
         zone=zone,
+        shot_distance=shot_distance,  # FIXED: Now passing this parameter
         defender_distance=defender_distance,
         contest_level=contest_level,
         recommended_action=recommended_action

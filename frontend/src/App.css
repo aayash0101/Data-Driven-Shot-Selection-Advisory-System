@@ -337,11 +337,11 @@ body {
 .breakdown-total .breakdown-label {
   font-size: 1.1rem;
   font-weight: bold;
-  color: #efded4;
+  color: #fbf8f7;
 }
 
 .breakdown-total .breakdown-value {
-  color: #fff8f4;
+  color: #fefdfd;
   font-size: 1.3rem;
 }
 
@@ -351,7 +351,7 @@ body {
   background: rgba(255, 255, 255, 0.5);
   border-radius: 6px;
   font-size: 0.85rem;
-  color: #f4e5dd;
+  color: #792d03;
   text-align: center;
   line-height: 1.5;
   font-style: italic;
