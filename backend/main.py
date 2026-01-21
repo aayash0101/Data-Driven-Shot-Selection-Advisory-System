@@ -41,6 +41,8 @@ from action_confidence import compute_action_confidence
 # Import NEW dual-mode explanation formatter
 from explanation_formatter import format_dual_mode_explanation
 
+from shot_data_cache import get_shot_metadata, sample_shots
+
 app = FastAPI(title="Shot Selection Advisory API v3.3")
 
 # Enable CORS for frontend
@@ -972,7 +974,82 @@ async def predict_shot(request: ShotRequest):
             status_code=500,
             detail=f"Prediction error: {str(e)}\n\nDetails:\n{error_details}"
         )
+# Add these endpoints to main.py (before if __name__ == "__main__":)
 
+@app.get("/shots/meta")
+async def get_shots_metadata():
+    """
+    Get metadata about available shot data.
+    Returns count, coordinate ranges, and filter options.
+    """
+    try:
+        metadata = get_shot_metadata()
+        return metadata
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": "Data not found",
+                "message": str(e),
+                "instructions": {
+                    "step1": "Set NBA_DATA_DIR environment variable to your dataset directory",
+                    "step2_powershell": '$env:NBA_DATA_DIR="C:\\Users\\Aayash\\Downloads\\archive"',
+                    "step2_cmd": 'set NBA_DATA_DIR=C:\\Users\\Aayash\\Downloads\\archive',
+                    "step3": "Restart the backend server"
+                }
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error loading metadata: {str(e)}")
+
+
+@app.get("/shots/sample")
+async def get_shot_sample(
+    limit: int = 15000,
+    made: str = 'all',
+    shot_type: str = 'all',
+    zone: str = 'all'
+):
+    """
+    Get a sample of shots with optional filters.
+    
+    Query Parameters:
+        limit: Maximum shots to return (default 15000)
+        made: 'all', 'made', or 'missed'
+        shot_type: 'all', '2PT Field Goal', or '3PT Field Goal'
+        zone: 'all' or specific zone name
+    
+    Returns:
+        List of {x, y, made} objects with coordinates in feet
+    """
+    try:
+        shots = sample_shots(
+            limit=limit,
+            made=made,
+            shot_type=shot_type,
+            zone=zone
+        )
+        return {
+            'shots': shots,
+            'count': len(shots),
+            'filters': {
+                'made': made,
+                'shot_type': shot_type,
+                'zone': zone,
+                'limit': limit
+            }
+        }
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": "Data not found",
+                "message": str(e),
+                "instructions": "Set NBA_DATA_DIR environment variable and restart server"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error sampling shots: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
