@@ -313,9 +313,9 @@ def get_coaching_insight(
     if decision == "TAKE SHOT":
         # Positive reinforcement with teaching point
         if contest_level in ["WIDE_OPEN", "OPEN"]:
-            return "Great shot selection discipline—taking open looks in rhythm is how efficient offenses operate."
+            return "Great shot selection discipline, taking open looks in rhythm is how efficient offenses operate."
         elif zone in ["Left Corner 3", "Right Corner 3"]:
-            return "Emphasize corner three opportunities in offensive schemes—they're the most efficient outside shots."
+            return "Emphasize corner three opportunities in offensive schemes, they're the most efficient outside shots."
         elif make_probability >= threshold + 0.15:
             return "This is exactly the type of high-quality shot we want to generate consistently."
         else:
@@ -325,19 +325,19 @@ def get_coaching_insight(
         # Teaching moment based on primary issue
         
         if contest_level == "TIGHT":
-            return "Encourage one more pass against tight closeouts—defenders committed to the ball create passing lanes."
+            return "Encourage one more pass against tight closeouts, defenders committed to the ball create passing lanes."
         
         elif shot_type == "2PT Field Goal" and zone == "Mid-Range":
             return "Work on attacking the rim or creating three-point looks rather than settling for mid-range shots."
         
         elif shot_type == "3PT Field Goal" and shot_distance >= 27:
-            return "Coach players to recognize range limitations—relocating 2-3 feet closer significantly improves efficiency."
+            return "Coach players to recognize range limitations, relocating 2-3 feet closer significantly improves efficiency."
         
         elif recommended_action and "Swing" in recommended_action:
             return "Encourage ball reversal to improve spacing and create higher-quality looks on the weak side."
         
         elif recommended_action and "Drive" in recommended_action:
-            return "Teach players to attack closeouts—driving to the rim or creating kick-out opportunities."
+            return "Teach players to attack closeouts, driving to the rim or creating kick-out opportunities."
         
         elif recommended_action and "Reset" in recommended_action:
             return "Emphasize early offense execution to avoid late-clock forced attempts."
@@ -346,7 +346,7 @@ def get_coaching_insight(
             return "Reinforce the principle: when the defense commits, the offense should move the ball."
         
         else:
-            return "Shot selection discipline is the foundation of efficient offense—trust the process."
+            return "Shot selection discipline is the foundation of efficient offense, trust the process."
 
 
 def format_dual_mode_explanation(
