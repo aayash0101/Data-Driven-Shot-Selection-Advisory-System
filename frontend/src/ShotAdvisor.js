@@ -146,7 +146,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>🏀 Shot Selection Advisor</h1>
+        <h1> Shot Selection Advisor</h1>
         <p>Data-driven shot selection advice with defender impact modeling & action recommendations</p>
       </header>
 
