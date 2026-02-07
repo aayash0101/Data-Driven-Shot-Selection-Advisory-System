@@ -231,7 +231,7 @@
   .chart-container {
     grid-template-columns: 1fr;
   }
-  
+
   .filters-panel {
     position: static;
   }

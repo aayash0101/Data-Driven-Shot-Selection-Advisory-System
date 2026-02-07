@@ -24,13 +24,13 @@ def format_player_explanation(
 ) -> List[str]:
     """
     Generate concise, action-focused explanation for players.
-    
+
     PLAYER MODE PHILOSOPHY:
     - Maximum 1-2 bullet points
     - Simple, direct language
     - Focus on what to do, not why
     - No technical jargon or percentages
-    
+
     Args:
         decision: "TAKE SHOT" or "PASS"
         make_probability: Predicted make probability (0-1)
@@ -41,18 +41,14 @@ def format_player_explanation(
         defender_distance: Distance to nearest defender (optional)
         contest_level: Contest quality (optional)
         time_remaining: Seconds remaining (optional)
-    
+
     Returns:
         List of 1-2 short explanation strings
     """
     explanations = []
-    
+
     if decision == "TAKE SHOT":
-        # ===================================================================
-        # TAKE SHOT - Player Explanations
-        # ===================================================================
-        
-        # Primary reason: good opportunity
+
         if contest_level in ["WIDE_OPEN", "OPEN"]:
             explanations.append("You're open with a clean look. Let it fly.")
         elif zone in ["Left Corner 3", "Right Corner 3"]:
@@ -61,42 +57,30 @@ def format_player_explanation(
             explanations.append("You're at the rim. Attack strong.")
         else:
             explanations.append("This is a good shot for you. Be confident.")
-    
-    else:  # decision == "PASS"
-        # ===================================================================
-        # PASS - Player Explanations
-        # ===================================================================
-        
-        # Prioritize most actionable reason
-        
-        # 1. Tight defense (most common and clear)
+
+    else:
+
         if contest_level == "TIGHT":
             explanations.append("Defender's hand is in your face. Move the ball.")
-        
-        # 2. Contested + poor location
+
         elif contest_level == "CONTESTED" and zone == "Mid-Range":
             explanations.append("Contested long two isn't efficient. Find a better look.")
-        
-        # 3. Deep three
+
         elif shot_type == "3PT Field Goal" and shot_distance >= 27:
             explanations.append("Too deep for a good look. Reset or drive.")
-        
-        # 4. General contested shot
+
         elif contest_level in ["TIGHT", "CONTESTED"]:
             explanations.append("The defense is on you. Pass to create space.")
-        
-        # 5. Poor zone (mid-range)
+
         elif zone == "Mid-Range" and shot_distance >= 15:
             explanations.append("Long two isn't your best option. Get closer or kick out.")
-        
-        # 6. Late clock
+
         elif time_remaining is not None and time_remaining <= 5:
             explanations.append("Clock's running down. Make a quick decision.")
-        
-        # 7. Generic low probability
+
         else:
             explanations.append("Not your shot right now. Keep the ball moving.")
-    
+
     return explanations
 
 
@@ -114,13 +98,13 @@ def format_coach_explanation(
 ) -> List[str]:
     """
     Generate detailed, analytical explanation for coaches.
-    
+
     COACH MODE PHILOSOPHY:
     - Multi-factor reasoning (3-5 points)
     - Reference specific metrics and thresholds
     - Explain basketball principles
     - Connect to broader strategy
-    
+
     Args:
         decision: "TAKE SHOT" or "PASS"
         make_probability: Predicted make probability (0-1)
@@ -132,21 +116,16 @@ def format_coach_explanation(
         contest_level: Contest quality (optional)
         time_remaining: Seconds remaining (optional)
         quarter: Current quarter (optional)
-    
+
     Returns:
         List of detailed explanation strings
     """
     explanations = []
-    
-    # Calculate probability gap for context
+
     prob_gap = abs(make_probability - threshold)
-    
+
     if decision == "TAKE SHOT":
-        # ===================================================================
-        # TAKE SHOT - Coach Explanations
-        # ===================================================================
-        
-        # 1. Probability vs threshold
+
         if prob_gap >= 0.10:
             explanations.append(
                 f"Make probability ({make_probability:.1%}) significantly exceeds "
@@ -157,8 +136,8 @@ def format_coach_explanation(
                 f"Make probability ({make_probability:.1%}) meets the efficiency "
                 f"threshold ({threshold:.1%}), making this a viable shot."
             )
-        
-        # 2. Zone/location analysis
+
+
         if zone in ["Left Corner 3", "Right Corner 3"]:
             explanations.append(
                 "Corner three-pointers are among the highest-efficiency shots in basketball "
@@ -179,8 +158,8 @@ def format_coach_explanation(
                 f"Shot selection from {zone} ({shot_distance:.1f} ft) aligns "
                 "with efficient offensive principles."
             )
-        
-        # 3. Defensive context
+
+
         if contest_level == "WIDE_OPEN":
             explanations.append(
                 f"Defender is {defender_distance:.1f} feet away, providing minimal "
@@ -191,20 +170,20 @@ def format_coach_explanation(
                 "Late defensive rotation creates a window for the shot. "
                 "Shooter should be in rhythm and balanced."
             )
-        
-        # 4. Game context
+
+
         if time_remaining is not None and time_remaining <= 5:
             explanations.append(
                 "With shot clock winding down, this represents the best available "
                 "scoring opportunity. Execution is critical."
             )
-    
-    else:  # decision == "PASS"
-        # ===================================================================
-        # PASS - Coach Explanations
-        # ===================================================================
-        
-        # 1. Probability vs threshold (always first)
+
+    else:
+
+
+
+
+
         if prob_gap >= 0.10:
             explanations.append(
                 f"Make probability ({make_probability:.1%}) is well below the "
@@ -220,8 +199,8 @@ def format_coach_explanation(
                 f"Make probability ({make_probability:.1%}) is marginally below "
                 f"threshold ({threshold:.1%}). Consider alternative options."
             )
-        
-        # 2. Defensive pressure analysis
+
+
         if defender_distance is not None and contest_level:
             if contest_level == "TIGHT":
                 explanations.append(
@@ -234,8 +213,8 @@ def format_coach_explanation(
                     f"Active defensive contest from {defender_distance:.1f} feet away "
                     "reduces expected shot value. Driving or passing creates better looks."
                 )
-        
-        # 3. Shot type and zone efficiency
+
+
         if shot_type == "2PT Field Goal" and zone == "Mid-Range" and shot_distance >= 15:
             explanations.append(
                 f"Long two-point attempts ({shot_distance:.1f} ft) are historically "
@@ -252,8 +231,8 @@ def format_coach_explanation(
                 f"Shot from {zone} at {shot_distance:.1f} feet doesn't align with "
                 "high-efficiency zone preferences (corners, rim, select above-the-break areas)."
             )
-        
-        # 4. Time and game context
+
+
         if time_remaining is not None:
             if time_remaining <= 5:
                 explanations.append(
@@ -265,14 +244,14 @@ def format_coach_explanation(
                     f"With {time_remaining} seconds remaining, there's time to create "
                     "a higher-quality shot through ball movement and player movement."
                 )
-        
-        # 5. Strategic insight
+
+
         if quarter is not None and quarter >= 4 and time_remaining is not None and time_remaining <= 120:
             explanations.append(
                 "In clutch situations, shot selection becomes even more critical. "
                 "Maximizing expected points per possession is essential."
             )
-    
+
     return explanations
 
 
@@ -282,19 +261,19 @@ def get_coaching_insight(
     threshold: float,
     shot_type: str,
     zone: str,
-    shot_distance: float,  # FIXED: Added this parameter
+    shot_distance: float,
     defender_distance: Optional[float] = None,
     contest_level: Optional[str] = None,
     recommended_action: Optional[str] = None
 ) -> str:
     """
     Generate a single coaching insight or teaching point.
-    
+
     COACHING INSIGHT PHILOSOPHY:
     - One sentence teaching moment
     - Connects to broader basketball principles
     - Actionable for future possessions
-    
+
     Args:
         decision: "TAKE SHOT" or "PASS"
         make_probability: Predicted make probability
@@ -305,13 +284,13 @@ def get_coaching_insight(
         defender_distance: Distance to defender (optional)
         contest_level: Contest quality (optional)
         recommended_action: The recommended action (optional)
-    
+
     Returns:
         Single coaching insight string
     """
-    
+
     if decision == "TAKE SHOT":
-        # Positive reinforcement with teaching point
+
         if contest_level in ["WIDE_OPEN", "OPEN"]:
             return "Great shot selection discipline, taking open looks in rhythm is how efficient offenses operate."
         elif zone in ["Left Corner 3", "Right Corner 3"]:
@@ -320,31 +299,31 @@ def get_coaching_insight(
             return "This is exactly the type of high-quality shot we want to generate consistently."
         else:
             return "Confident, on-balance shooting in good locations builds offensive rhythm."
-    
-    else:  # decision == "PASS"
-        # Teaching moment based on primary issue
-        
+
+    else:
+
+
         if contest_level == "TIGHT":
             return "Encourage one more pass against tight closeouts, defenders committed to the ball create passing lanes."
-        
+
         elif shot_type == "2PT Field Goal" and zone == "Mid-Range":
             return "Work on attacking the rim or creating three-point looks rather than settling for mid-range shots."
-        
+
         elif shot_type == "3PT Field Goal" and shot_distance >= 27:
             return "Coach players to recognize range limitations, relocating 2-3 feet closer significantly improves efficiency."
-        
+
         elif recommended_action and "Swing" in recommended_action:
             return "Encourage ball reversal to improve spacing and create higher-quality looks on the weak side."
-        
+
         elif recommended_action and "Drive" in recommended_action:
             return "Teach players to attack closeouts, driving to the rim or creating kick-out opportunities."
-        
+
         elif recommended_action and "Reset" in recommended_action:
             return "Emphasize early offense execution to avoid late-clock forced attempts."
-        
+
         elif contest_level in ["TIGHT", "CONTESTED"]:
             return "Reinforce the principle: when the defense commits, the offense should move the ball."
-        
+
         else:
             return "Shot selection discipline is the foundation of efficient offense, trust the process."
 
@@ -364,20 +343,20 @@ def format_dual_mode_explanation(
 ) -> Dict[str, any]:
     """
     Generate both player and coach explanations with coaching insight.
-    
+
     This is the main entry point for dual-mode explanations.
-    
+
     Args:
         All standard prediction context parameters
-    
+
     Returns:
         Dict with:
             - player: List[str] (1-2 short explanations)
             - coach: List[str] (3-5 detailed explanations)
             - coaching_insight: str (single teaching point)
     """
-    
-    # Generate player explanations (short, actionable)
+
+
     player_explanations = format_player_explanation(
         decision=decision,
         make_probability=make_probability,
@@ -389,8 +368,8 @@ def format_dual_mode_explanation(
         contest_level=contest_level,
         time_remaining=time_remaining
     )
-    
-    # Generate coach explanations (detailed, analytical)
+
+
     coach_explanations = format_coach_explanation(
         decision=decision,
         make_probability=make_probability,
@@ -403,20 +382,20 @@ def format_dual_mode_explanation(
         time_remaining=time_remaining,
         quarter=quarter
     )
-    
-    # Generate coaching insight (teaching moment)
+
+
     coaching_insight = get_coaching_insight(
         decision=decision,
         make_probability=make_probability,
         threshold=threshold,
         shot_type=shot_type,
         zone=zone,
-        shot_distance=shot_distance,  # FIXED: Now passing this parameter
+        shot_distance=shot_distance,
         defender_distance=defender_distance,
         contest_level=contest_level,
         recommended_action=recommended_action
     )
-    
+
     return {
         "player": player_explanations,
         "coach": coach_explanations,
@@ -424,15 +403,15 @@ def format_dual_mode_explanation(
     }
 
 
-# =============================================================================
-# EXAMPLE USAGE & TESTING
-# =============================================================================
+
+
+
 
 if __name__ == "__main__":
     """
     Test cases demonstrating dual-mode explanations
     """
-    
+
     test_scenarios = [
         {
             "name": "PASS - Tight Contest on Deep Three",
@@ -499,35 +478,35 @@ if __name__ == "__main__":
             }
         }
     ]
-    
+
     print("=" * 80)
     print("DUAL-MODE EXPLANATION FORMATTER - TEST SCENARIOS")
     print("=" * 80)
     print()
-    
+
     for scenario in test_scenarios:
         print(f"📊 {scenario['name']}")
         print("-" * 80)
-        
+
         result = format_dual_mode_explanation(**scenario['params'])
-        
+
         print(f"Decision: {scenario['params']['decision']}")
         print(f"Make Probability: {scenario['params']['make_probability']:.1%}")
         print(f"Threshold: {scenario['params']['threshold']:.1%}")
         if scenario['params']['recommended_action']:
             print(f"Recommended Action: {scenario['params']['recommended_action']}")
         print()
-        
+
         print("🏀 PLAYER MODE:")
         for exp in result['player']:
             print(f"  • {exp}")
         print()
-        
+
         print("📋 COACH MODE:")
         for i, exp in enumerate(result['coach'], 1):
             print(f"  {i}. {exp}")
         print()
-        
+
         print(f"💡 COACHING INSIGHT:")
         print(f"  {result['coaching_insight']}")
         print()

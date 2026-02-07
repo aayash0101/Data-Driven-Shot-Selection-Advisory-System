@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import Court from './Court';
+import { logAttempt } from './utils/sessionTracker';
 
 const API_URL = 'http://localhost:8000';
 
@@ -13,18 +14,55 @@ function App() {
   const [secsLeft, setSecsLeft] = useState(0);
   const [position, setPosition] = useState('PG');
 
-  // Defender state
+
   const [defenderDistance, setDefenderDistance] = useState(null);
   const [contestLevel, setContestLevel] = useState('OPEN');
-  
-  // NEW: Explanation mode state
+
+
   const [explanationMode, setExplanationMode] = useState('player');
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Derive shot type + zone from location to avoid manual category mismatches.
+  useEffect(() => {
+    const replayData = localStorage.getItem('replay_attempt');
+    if (replayData) {
+      try {
+        const attempt = JSON.parse(replayData);
+        // Safely destructure with defaults if input is missing properties
+        const {
+          locX = 0, locY = 0, shotDistance = 20,
+          defenderDistance = null, contestLevel = 'OPEN',
+          quarter = 1, minsLeft = 10, secsLeft = 0, position = 'PG'
+        } = attempt.input || {};
+
+        // Restore State
+        setShotDistance(shotDistance);
+        setLocX(locX);
+        setLocY(locY);
+        setQuarter(quarter);
+        setMinsLeft(minsLeft);
+        setSecsLeft(secsLeft);
+        setPosition(position);
+        setDefenderDistance(defenderDistance);
+        setContestLevel(contestLevel);
+
+        // Trigger Prediction immediately with override values
+        handlePredict({
+          shotDistance, locX, locY, defenderDistance, contestLevel
+        });
+
+        // Clear Replay State
+        localStorage.removeItem('replay_attempt');
+      } catch (e) {
+        console.error("Failed to replay attempt", e);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
   const deriveShotType = (distanceFt) => (distanceFt >= 23.0 ? '3PT Field Goal' : '2PT Field Goal');
 
   const deriveZone = (xFt, yFt, distanceFt) => {
@@ -37,7 +75,7 @@ function App() {
     return 'Above the Break 3';
   };
 
-  // Core prediction call – can be used by sliders OR court clicks
+
   const handlePredict = async (override) => {
     setLoading(true);
     setError(null);
@@ -64,7 +102,7 @@ function App() {
       position: position,
       defender_distance: defDist,
       contest_level: contest,
-      mode: explanationMode  // Include explanation mode
+      mode: explanationMode
     };
 
     try {
@@ -81,6 +119,9 @@ function App() {
 
       const data = await response.json();
       setResult(data);
+
+      // Log the attempt to session
+      logAttempt(payload, data);
     } catch (err) {
       setError(err.message);
       console.error('Prediction error:', err);
@@ -89,10 +130,10 @@ function App() {
     }
   };
 
-  // Called when user clicks on the court
-  const handleCourtShot = ({ 
-    locX: xFt, 
-    locY: yFt, 
+
+  const handleCourtShot = ({
+    locX: xFt,
+    locY: yFt,
     shotDistance: distFt,
     defenderDistance: defDist,
     contestLevel: contest
@@ -103,7 +144,7 @@ function App() {
     setDefenderDistance(defDist);
     setContestLevel(contest);
 
-    // Immediately trigger prediction using these values
+
     handlePredict({
       locX: xFt,
       locY: yFt,
@@ -113,16 +154,16 @@ function App() {
     });
   };
 
-  // Format breakdown component for display
+
   const formatBreakdownComponent = (name, value) => {
     const percentage = (value * 100).toFixed(1);
     const sign = value >= 0 ? '+' : '';
     const color = value > 0 ? '#10b981' : value < 0 ? '#ef4444' : '#6b7280';
-    
+
     return { name, percentage: `${sign}${percentage}%`, value, color };
   };
 
-  // Component name mapping (updated with defensive pressure)
+
   const componentNames = {
     baseline: 'Base Ability',
     location_quality: 'Location Quality',
@@ -131,7 +172,7 @@ function App() {
     defensive_pressure: 'Defensive Pressure'
   };
 
-  // Action icon mapping for visual display
+
   const getActionIcon = (action) => {
     if (action?.includes('Swing')) return '🔄';
     if (action?.includes('Attack')) return '⚡';
@@ -154,39 +195,39 @@ function App() {
         <div className="input-panel">
           <h2>Shot Context</h2>
 
-          {/* Interactive Court */}
+          { }
           <Court onShotSelected={handleCourtShot} />
 
-          {/* Display current court-derived coordinates */}
+          { }
           <div className="coords-display">
             <div><strong>LOC_X:</strong> {locX.toFixed(2)} ft</div>
             <div><strong>LOC_Y:</strong> {locY.toFixed(2)} ft</div>
             <div><strong>SHOT_DISTANCE:</strong> {shotDistance.toFixed(2)} ft</div>
             <div><strong>SHOT_TYPE (auto):</strong> {deriveShotType(shotDistance)}</div>
             <div><strong>ZONE (auto):</strong> {deriveZone(locX, locY, shotDistance)}</div>
-            
-            {/* Defender info display */}
+
+            { }
             {defenderDistance !== null && (
               <>
                 <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #ddd' }}>
                   <strong>DEFENDER_DISTANCE:</strong> {defenderDistance.toFixed(2)} ft
                 </div>
                 <div>
-                  <strong>CONTEST_LEVEL:</strong> 
+                  <strong>CONTEST_LEVEL:</strong>
                   <span style={{
                     marginLeft: '8px',
                     padding: '2px 8px',
                     borderRadius: '4px',
                     fontSize: '0.9em',
                     fontWeight: 'bold',
-                    backgroundColor: 
+                    backgroundColor:
                       contestLevel === 'TIGHT' ? '#fee2e2' :
-                      contestLevel === 'CONTESTED' ? '#fed7aa' :
-                      contestLevel === 'OPEN' ? '#fef3c7' : '#d1fae5',
-                    color: 
+                        contestLevel === 'CONTESTED' ? '#fed7aa' :
+                          contestLevel === 'OPEN' ? '#fef3c7' : '#d1fae5',
+                    color:
                       contestLevel === 'TIGHT' ? '#991b1b' :
-                      contestLevel === 'CONTESTED' ? '#9a3412' :
-                      contestLevel === 'OPEN' ? '#854d0e' : '#065f46'
+                        contestLevel === 'CONTESTED' ? '#9a3412' :
+                          contestLevel === 'OPEN' ? '#854d0e' : '#065f46'
                   }}>
                     {contestLevel}
                   </span>
@@ -195,7 +236,7 @@ function App() {
             )}
           </div>
 
-          {/* Existing controls */}
+          { }
           <div className="input-group">
             <label>
               Shot Distance (ft): {shotDistance.toFixed(1)}
@@ -289,7 +330,7 @@ function App() {
             </label>
           </div>
 
-          {/* NEW: Explanation Mode Toggle */}
+          { }
           <div className="input-group">
             <label>
               Explanation Mode:
@@ -322,9 +363,8 @@ function App() {
           {result && (
             <>
               <div
-                className={`result ${
-                  result.decision === 'TAKE SHOT' ? 'take-shot' : 'pass'
-                }`}
+                className={`result ${result.decision === 'TAKE SHOT' ? 'take-shot' : 'pass'
+                  }`}
               >
                 <div className="decision">
                   <h3>{result.decision}</h3>
@@ -343,8 +383,8 @@ function App() {
                     <label>Confidence:</label>
                     <span>{(result.confidence * 100).toFixed(1)}%</span>
                   </div>
-                  
-                  {/* Display contest info */}
+
+                  { }
                   {result.contest_level && (
                     <div className="metric">
                       <label>Contest:</label>
@@ -353,20 +393,20 @@ function App() {
                         borderRadius: '4px',
                         fontSize: '0.9em',
                         fontWeight: 'bold',
-                        backgroundColor: 
+                        backgroundColor:
                           result.contest_level === 'TIGHT' ? '#fee2e2' :
-                          result.contest_level === 'CONTESTED' ? '#fed7aa' :
-                          result.contest_level === 'OPEN' ? '#fef3c7' : '#d1fae5',
-                        color: 
+                            result.contest_level === 'CONTESTED' ? '#fed7aa' :
+                              result.contest_level === 'OPEN' ? '#fef3c7' : '#d1fae5',
+                        color:
                           result.contest_level === 'TIGHT' ? '#991b1b' :
-                          result.contest_level === 'CONTESTED' ? '#9a3412' :
-                          result.contest_level === 'OPEN' ? '#854d0e' : '#065f46'
+                            result.contest_level === 'CONTESTED' ? '#9a3412' :
+                              result.contest_level === 'OPEN' ? '#854d0e' : '#065f46'
                       }}>
                         {result.contest_level}
                       </span>
                     </div>
                   )}
-                  
+
                   {result.defender_distance !== null && result.defender_distance !== undefined && (
                     <div className="metric">
                       <label>Defender Distance:</label>
@@ -380,30 +420,30 @@ function App() {
                     {explanationMode === 'player' ? '🏀 Player Explanation' : '📋 Coach Analysis'}
                   </h4>
                   <ul>
-                    {result.explanation && result.explanation[explanationMode] && 
-                     result.explanation[explanationMode].map((exp, idx) => (
-                      <li key={idx}>{exp}</li>
-                    ))}
+                    {result.explanation && result.explanation[explanationMode] &&
+                      result.explanation[explanationMode].map((exp, idx) => (
+                        <li key={idx}>{exp}</li>
+                      ))}
                   </ul>
-                  
-                  {/* Show coaching insight if available */}
+
+                  { }
                   {result.explanation && result.explanation.coaching_insight && (
                     <div className="coaching-insight">
                       <strong>💡 Coaching Insight:</strong>
                       <p>{result.explanation.coaching_insight}</p>
                     </div>
                   )}
-                  
-                  {/* Mode switcher hint */}
+
+                  { }
                   <div className="mode-switcher-hint">
                     Currently viewing <strong>{explanationMode === 'player' ? 'Player' : 'Coach'}</strong> mode.
-                    Switch to {explanationMode === 'player' ? 'Coach' : 'Player'} mode using the dropdown above for 
+                    Switch to {explanationMode === 'player' ? 'Coach' : 'Player'} mode using the dropdown above for
                     {explanationMode === 'player' ? ' detailed analysis' : ' quick, actionable advice'}.
                   </div>
                 </div>
               </div>
 
-              {/* Action Recommendation Panel with Confidence (only for PASS decisions) */}
+              { }
               {result.decision === 'PASS' && result.recommended_action && (
                 <div className="action-recommendation">
                   <h3>
@@ -416,8 +456,8 @@ function App() {
                     <div className="action-reasoning">
                       {result.action_reasoning}
                     </div>
-                    
-                    {/* NEW: Action Confidence Display */}
+
+                    { }
                     {result.action_confidence !== null && result.action_confidence !== undefined && (
                       <div className="action-confidence-section">
                         <div className="confidence-header">
@@ -455,22 +495,22 @@ function App() {
                 </div>
               )}
 
-              {/* Shot Quality Breakdown Panel */}
+              { }
               {result.shot_quality_breakdown && (
                 <div className="quality-breakdown">
                   <h3>Shot Quality Breakdown</h3>
                   <div className="breakdown-divider"></div>
-                  
+
                   <div className="breakdown-components">
                     {Object.entries(result.shot_quality_breakdown).map(([key, value]) => {
                       const formatted = formatBreakdownComponent(componentNames[key] || key, value);
                       return (
-                        <div 
-                          key={key} 
+                        <div
+                          key={key}
                           className={`breakdown-item ${key === 'defensive_pressure' ? 'defensive-pressure' : ''}`}
                         >
                           <div className="breakdown-label">{formatted.name}:</div>
-                          <div 
+                          <div
                             className="breakdown-value"
                             style={{ color: formatted.color, fontWeight: 'bold' }}
                           >
@@ -480,29 +520,29 @@ function App() {
                       );
                     })}
                   </div>
-                  
+
                   <div className="breakdown-divider"></div>
-                  
+
                   <div className="breakdown-total">
                     <div className="breakdown-label">Final Probability:</div>
                     <div className="breakdown-value" style={{ fontWeight: 'bold', fontSize: '1.1em' }}>
                       {(result.make_probability * 100).toFixed(1)}%
                     </div>
                   </div>
-                  
+
                   <div className="breakdown-note">
-                    Components show how shot location, type, timing, and <strong>defensive pressure</strong> 
+                    Components show how shot location, type, timing, and <strong>defensive pressure</strong>
                     contribute to the predicted make probability.
                   </div>
                 </div>
               )}
 
-              {/* Defender Impact Details Panel */}
+              { }
               {result.defender_impact_details && result.defender_distance !== null && (
                 <div className="defender-impact-details">
                   <h3>🛡️ Defender Impact Analysis</h3>
                   <div className="breakdown-divider"></div>
-                  
+
                   <div className="impact-metrics">
                     <div className="impact-metric">
                       <label>Distance Decay Factor:</label>
@@ -520,7 +560,7 @@ function App() {
                     </div>
                     <div className="impact-metric">
                       <label>Net Adjustment:</label>
-                      <span style={{ 
+                      <span style={{
                         fontWeight: 'bold',
                         color: result.defender_impact_details.percentage_adjustment < 0 ? '#ef4444' : '#10b981'
                       }}>
@@ -528,9 +568,9 @@ function App() {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="breakdown-note">
-                    Defender impact uses exponential distance decay combined with contest quality 
+                    Defender impact uses exponential distance decay combined with contest quality
                     multipliers to realistically model defensive pressure.
                   </div>
                 </div>
@@ -541,7 +581,7 @@ function App() {
           {!result && !error && !loading && (
             <div className="placeholder">
               <p>
-                Click anywhere on the court to place shooter and defender, or 
+                Click anywhere on the court to place shooter and defender, or
                 adjust the shot parameters and click "Predict Shot" to get advice.
               </p>
             </div>

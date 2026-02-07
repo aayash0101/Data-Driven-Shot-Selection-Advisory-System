@@ -8,7 +8,7 @@ Version 3.3 - Added confidence scoring for action recommendations
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, Literal, Dict, Any  # FIXED: Added 'Any' import
+from typing import Optional, Literal, Dict, Any
 from enum import Enum
 import pickle
 import numpy as np
@@ -16,49 +16,49 @@ import pandas as pd
 from pathlib import Path
 import sys
 
-# Add parent directory to path for imports
+
 parent_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(parent_dir))
 
-# Import modules (this ensures they're available for pickle)
+
 from ml.shot_advisory import ShotAdvisor
 from ml.data_loader import ShotDataLoader
 from ml.feature_engineering import FeatureEngineer
 
-# Import shot quality analyzer and defender impact model
+
 from shot_quality_breakdown import ShotQualityAnalyzer
 from defender_impact import DefenderImpactModel, ContestLevel
 
-# Import coach feedback generator
+
 from coach_feedback import generate_coach_feedback
 
-# Import action recommender
+
 from action_recommender import get_action_recommendation
 
-# Import action confidence calculator
+
 from action_confidence import compute_action_confidence
 
-# Import NEW dual-mode explanation formatter
+
 from explanation_formatter import format_dual_mode_explanation
 
 from shot_data_cache import get_shot_metadata, sample_shots
 
 app = FastAPI(title="Shot Selection Advisory API v3.3")
 
-# Enable CORS for frontend
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ============================================================================
-# MODELS & SCHEMAS
-# ============================================================================
 
-# Global model objects
+
+
+
+
 model = None
 feature_engineer = None
 shot_advisor = None
@@ -77,12 +77,12 @@ class ShotRequest(BaseModel):
     secs_left: int
     position: Optional[str] = "PG"
     action_type: Optional[str] = "Jump Shot"
-    
-    # Defender data (optional for backward compatibility)
+
+
     defender_distance: Optional[float] = None
     contest_level: Optional[str] = "OPEN"
-    
-    # NEW: Explanation mode
+
+
     mode: Optional[Literal["player", "coach"]] = "player"
 
 
@@ -92,23 +92,23 @@ class ShotResponse(BaseModel):
     make_probability: float
     threshold: float
     confidence: float
-    explanation: Dict[str, Any]  # FIXED: Changed 'any' to 'Any'
-    
-    # Contest info in response
+    explanation: Dict[str, Any]
+
+
     contest_level: Optional[str] = None
     defender_distance: Optional[float] = None
-    
-    # Shot quality breakdown
+
+
     shot_quality_breakdown: Optional[Dict[str, float]] = None
-    
-    # Defender impact details
+
+
     defender_impact_details: Optional[Dict[str, float]] = None
-    
-    # Action recommendation (only populated for PASS decisions)
+
+
     recommended_action: Optional[str] = None
     action_reasoning: Optional[str] = None
-    
-    # Action confidence fields
+
+
     action_confidence: Optional[float] = None
     confidence_level: Optional[str] = None
     confidence_reasoning: Optional[str] = None
@@ -118,13 +118,13 @@ class ShotResponse(BaseModel):
 def load_models():
     """Load trained models and feature engineer."""
     global model, feature_engineer, shot_advisor
-    
-    # Ensure parent directory is in path for pickle imports
+
+
     parent_dir = Path(__file__).parent.parent
     if str(parent_dir) not in sys.path:
         sys.path.insert(0, str(parent_dir))
-    
-    # Check if model directory exists
+
+
     model_dir = parent_dir / "ml" / "models"
     if not model_dir.exists():
         print(f"Model directory not found: {model_dir}")
@@ -132,11 +132,11 @@ def load_models():
         print("  cd ml")
         print("  python train_model.py")
         return False
-    
-    # Check for required model files
+
+
     required_files = ["feature_engineer.pkl", "gradient_boosting.pkl"]
     missing_files = [f for f in required_files if not (model_dir / f).exists()]
-    
+
     if missing_files:
         print(f"Missing model files: {', '.join(missing_files)}")
         print(f"Model directory: {model_dir.absolute()}")
@@ -146,29 +146,29 @@ def load_models():
         print("\nOr for faster training (10% of data):")
         print("  python train_model.py --sample 0.1")
         return False
-    
+
     try:
-        # Ensure parent directory is in path so ml.feature_engineering can be imported
+
         if str(parent_dir) not in sys.path:
             sys.path.insert(0, str(parent_dir))
-        
-        # Also add ml directory to path for pickle compatibility
+
+
         ml_dir = parent_dir / "ml"
         if str(ml_dir) not in sys.path:
             sys.path.insert(0, str(ml_dir))
-        
-        # Import both ways to ensure pickle can find the module
+
+
         try:
             import ml.feature_engineering
         except ImportError:
             pass
-        
+
         try:
             import feature_engineering
         except ImportError:
             pass
-        
-        # Load feature engineer with custom unpickler
+
+
         with open(model_dir / "feature_engineer.pkl", "rb") as f:
             class CustomUnpickler(pickle.Unpickler):
                 def find_class(self, module, name):
@@ -187,17 +187,17 @@ def load_models():
                             if module.startswith('ml.'):
                                 module = module[3:]
                             return super().find_class(module, name)
-            
+
             unpickler = CustomUnpickler(f)
             feature_engineer = unpickler.load()
-        
-        # Load main model (Gradient Boosting)
+
+
         with open(model_dir / "gradient_boosting.pkl", "rb") as f:
             model = pickle.load(f)
-        
-        # Initialize shot advisor
+
+
         shot_advisor = ShotAdvisor()
-        
+
         print("✓ Models loaded successfully")
         print("✓ Defender impact model initialized")
         print("✓ Coach feedback system ready")
@@ -216,9 +216,9 @@ def load_models():
         return False
 
 
-# ============================================================================
-# API ENDPOINTS
-# ============================================================================
+
+
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -265,7 +265,7 @@ async def health():
     """Health check endpoint."""
     if model is None or feature_engineer is None:
         return {
-            "status": "not_ready", 
+            "status": "not_ready",
             "message": "Models not loaded. Please train models first.",
             "instructions": {
                 "step1": "cd ml",
@@ -274,8 +274,8 @@ async def health():
             }
         }
     return {
-        "status": "ready", 
-        "message": "API is ready with defender modeling, dual-mode explanations, action recommendations, and confidence scoring", 
+        "status": "ready",
+        "message": "API is ready with defender modeling, dual-mode explanations, action recommendations, and confidence scoring",
         "version": "3.4-dual-mode-explanations"
     }
 
@@ -293,33 +293,33 @@ async def defender_impact_demo():
         {"distance": 8, "contest": "OPEN", "description": "Late rotation"},
         {"distance": 15, "contest": "WIDE_OPEN", "description": "Wide-open shot"},
     ]
-    
+
     results = []
     for case in test_cases:
         try:
             contest_enum = ContestLevel(case["contest"])
         except (ValueError, KeyError):
             contest_enum = ContestLevel.OPEN
-        
+
         impact = DefenderImpactModel.compute_defender_impact(
             case["distance"],
             contest_enum
         )
-        
+
         explanation = DefenderImpactModel.get_explanation(
             case["distance"],
             contest_enum,
             impact
         )
-        
-        # Show effect on a typical 40% shot
+
+
         base_prob = 0.40
         adjusted_prob, _ = DefenderImpactModel.apply_defender_adjustment(
             base_prob,
             case["distance"],
             contest_enum
         )
-        
+
         results.append({
             "scenario": case["description"],
             "distance_ft": case["distance"],
@@ -333,7 +333,7 @@ async def defender_impact_demo():
             },
             "explanation": explanation
         })
-    
+
     return {
         "message": "Defender Impact Model Demonstration",
         "model_parameters": {
@@ -423,7 +423,7 @@ async def feedback_examples():
             "contest_level": "WIDE_OPEN"
         }
     ]
-    
+
     results = []
     for scenario in scenarios:
         feedback = generate_coach_feedback(**scenario)
@@ -442,7 +442,7 @@ async def feedback_examples():
             },
             "coach_feedback": feedback
         })
-    
+
     return {
         "message": "Coach Feedback System Examples",
         "description": "Natural language explanations for shot decisions",
@@ -513,11 +513,11 @@ async def action_examples():
             "contest_level": "OPEN"
         }
     ]
-    
+
     results = []
     for scenario in scenarios:
         action_rec = get_action_recommendation(**scenario)
-        
+
         results.append({
             "scenario": scenario["name"],
             "context": {
@@ -533,7 +533,7 @@ async def action_examples():
                 "primary_reason": action_rec['primary_reason']
             }
         })
-    
+
     return {
         "message": "Action Recommendation System Examples",
         "description": "Basketball-intelligent next actions for PASS decisions",
@@ -619,11 +619,11 @@ async def confidence_examples():
             "recommended_action": "Relocate for Better Look"
         }
     ]
-    
+
     results = []
     for scenario in scenarios:
         confidence_result = compute_action_confidence(**scenario)
-        
+
         results.append({
             "scenario": scenario["name"],
             "context": {
@@ -643,7 +643,7 @@ async def confidence_examples():
                 "factors": confidence_result['confidence_factors']
             }
         })
-    
+
     return {
         "message": "Action Confidence Scoring Examples",
         "description": "Explainable confidence assessments for recommended actions",
@@ -716,11 +716,11 @@ async def explanation_examples():
             "recommended_action": "Drive or Kick"
         }
     ]
-    
+
     results = []
     for scenario in scenarios:
         dual_explanations = format_dual_mode_explanation(**scenario)
-        
+
         results.append({
             "scenario": scenario["name"],
             "decision": scenario["decision"],
@@ -732,7 +732,7 @@ async def explanation_examples():
             },
             "explanations": dual_explanations
         })
-    
+
     return {
         "message": "Dual-Mode Explanation System Examples",
         "description": "Compare Player Mode (action-focused) vs Coach Mode (analytical)",
@@ -750,7 +750,7 @@ async def predict_shot(request: ShotRequest):
     """
     Predict shot selection advice with dual-mode explanations, action recommendations,
     and confidence scoring.
-    
+
     Workflow:
     1. Get ML base prediction
     2. Apply defender impact adjustment
@@ -759,8 +759,8 @@ async def predict_shot(request: ShotRequest):
     5. [NEW] Generate dual-mode explanations (player + coach)
     6. If PASS decision, generate action recommendation
     7. Compute confidence score for recommended action
-    
-    Returns decision, probabilities, breakdown, dual-mode explanations, 
+
+    Returns decision, probabilities, breakdown, dual-mode explanations,
     recommended action, and confidence assessment.
     """
     if model is None or feature_engineer is None:
@@ -772,16 +772,16 @@ async def predict_shot(request: ShotRequest):
                 "quick_start": "cd ml && python train_model.py --sample 0.1"
             }
         )
-    
+
     try:
-        # ====================================================================
-        # STEP 0: Prepare features (existing logic)
-        # ====================================================================
+
+
+
         time_remaining = request.mins_left * 60 + request.secs_left
         shot_angle = np.arctan2(request.loc_y, request.loc_x) * 180 / np.pi
         distance_from_center = np.sqrt(request.loc_x**2 + request.loc_y**2)
-        
-        # Map zone to ZONE_NAME
+
+
         zone_name_mapping = {
             'Restricted Area': 'Center',
             'In The Paint (Non-RA)': 'Center',
@@ -793,8 +793,8 @@ async def predict_shot(request: ShotRequest):
             'Right Side 3': 'Right Side Center'
         }
         zone_name = zone_name_mapping.get(request.zone, 'Center')
-        
-        # Create feature DataFrame
+
+
         feature_dict = {
             'SHOT_DISTANCE': [request.shot_distance],
             'LOC_X': [request.loc_x],
@@ -811,36 +811,36 @@ async def predict_shot(request: ShotRequest):
             'POSITION': [request.position],
             'POSITION_GROUP': [request.position[0] if request.position else 'G']
         }
-        
+
         features_df = pd.DataFrame(feature_dict)
-        
-        # Engineer features
+
+
         X = feature_engineer.transform(features_df)
-        
-        # ====================================================================
-        # STEP 1: Get ML base prediction
-        # ====================================================================
+
+
+
+
         base_make_probability = model.predict_proba(X)[0, 1]
-        
-        # ====================================================================
-        # STEP 2: Apply defender impact adjustment
-        # ====================================================================
+
+
+
+
         contest_enum = None
         if request.contest_level:
             try:
                 contest_enum = ContestLevel(request.contest_level)
             except (ValueError, KeyError):
                 contest_enum = ContestLevel.OPEN
-        
+
         adjusted_probability, impact_breakdown = DefenderImpactModel.apply_defender_adjustment(
             base_probability=base_make_probability,
             defender_distance=request.defender_distance,
             contest_level=contest_enum
         )
-        
-        # ====================================================================
-        # STEP 3: Compute shot quality breakdown (with defender data)
-        # ====================================================================
+
+
+
+
         breakdown = quality_analyzer.compute_breakdown(
             make_probability=adjusted_probability,
             shot_type=request.shot_type,
@@ -851,10 +851,10 @@ async def predict_shot(request: ShotRequest):
             defender_distance=request.defender_distance,
             contest_level=request.contest_level
         )
-        
-        # ====================================================================
-        # STEP 4: Get base advisory decision
-        # ====================================================================
+
+
+
+
         base_advice = shot_advisor.advise(
             make_probability=adjusted_probability,
             shot_type=request.shot_type,
@@ -863,11 +863,11 @@ async def predict_shot(request: ShotRequest):
             time_remaining=time_remaining,
             quarter=request.quarter
         )
-        
-        # ====================================================================
-        # STEP 5: Generate dual-mode explanations (player + coach)
-        # ====================================================================
-        # First, we need to know what action will be recommended (for coaching insight)
+
+
+
+
+
         temp_recommended_action = None
         if base_advice['decision'] == 'PASS':
             temp_action_rec = get_action_recommendation(
@@ -881,8 +881,8 @@ async def predict_shot(request: ShotRequest):
                 contest_level=request.contest_level
             )
             temp_recommended_action = temp_action_rec['action']
-        
-        # Generate dual-mode explanations
+
+
         dual_explanations = format_dual_mode_explanation(
             decision=base_advice['decision'],
             make_probability=adjusted_probability,
@@ -896,22 +896,22 @@ async def predict_shot(request: ShotRequest):
             contest_level=request.contest_level,
             recommended_action=temp_recommended_action
         )
-        
-        # ====================================================================
-        # STEP 6: Generate action recommendation for PASS decisions
-        # ====================================================================
+
+
+
+
         recommended_action = None
         action_reasoning = None
         action_confidence_score = None
         confidence_level = None
         confidence_reasoning = None
         confidence_factors = None
-        
+
         if base_advice['decision'] == 'PASS':
-            # We already generated this in step 5, reuse it
+
             recommended_action = temp_recommended_action
-            
-            # Get full action recommendation details
+
+
             action_rec = get_action_recommendation(
                 make_probability=adjusted_probability,
                 shot_type=request.shot_type,
@@ -923,10 +923,10 @@ async def predict_shot(request: ShotRequest):
                 contest_level=request.contest_level
             )
             action_reasoning = action_rec['reasoning']
-            
-            # ================================================================
-            # STEP 7: Compute confidence for the recommended action
-            # ================================================================
+
+
+
+
             confidence_result = compute_action_confidence(
                 make_probability=adjusted_probability,
                 threshold=base_advice['threshold'],
@@ -940,21 +940,21 @@ async def predict_shot(request: ShotRequest):
                 contest_level=request.contest_level,
                 recommended_action=recommended_action
             )
-            
+
             action_confidence_score = confidence_result['action_confidence']
             confidence_level = confidence_result['confidence_level']
             confidence_reasoning = confidence_result['confidence_reasoning']
             confidence_factors = confidence_result['confidence_factors']
-        
-        # ====================================================================
-        # STEP 8: Return comprehensive response
-        # ====================================================================
+
+
+
+
         return ShotResponse(
             decision=base_advice['decision'],
             make_probability=adjusted_probability,
             threshold=base_advice['threshold'],
             confidence=base_advice['confidence'],
-            explanation=dual_explanations,  # Now returns dict with player/coach/insight
+            explanation=dual_explanations,
             contest_level=request.contest_level,
             defender_distance=request.defender_distance,
             shot_quality_breakdown=breakdown,
@@ -966,7 +966,7 @@ async def predict_shot(request: ShotRequest):
             confidence_reasoning=confidence_reasoning,
             confidence_factors=confidence_factors
         )
-    
+
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
@@ -974,7 +974,7 @@ async def predict_shot(request: ShotRequest):
             status_code=500,
             detail=f"Prediction error: {str(e)}\n\nDetails:\n{error_details}"
         )
-# Add these endpoints to main.py (before if __name__ == "__main__":)
+
 
 @app.get("/shots/meta")
 async def get_shots_metadata():
@@ -1012,13 +1012,13 @@ async def get_shot_sample(
 ):
     """
     Get a sample of shots with optional filters.
-    
+
     Query Parameters:
         limit: Maximum shots to return (default 15000)
         made: 'all', 'made', or 'missed'
         shot_type: 'all', '2PT Field Goal', or '3PT Field Goal'
         zone: 'all' or specific zone name
-    
+
     Returns:
         List of {x, y, made} objects with coordinates in feet
     """

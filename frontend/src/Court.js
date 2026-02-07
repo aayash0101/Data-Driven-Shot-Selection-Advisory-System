@@ -1,26 +1,17 @@
 import React, { useState } from 'react';
 import './Court.css';
 
-const COURT_WIDTH_FT = 50;   // -25 to +25
-const COURT_LENGTH_FT = 50;  // 0 (basket) to 50 (half-court)
+const COURT_WIDTH_FT = 50;
+const COURT_LENGTH_FT = 50;
 
-/**
- * Calculate Euclidean distance between two points in feet
- */
+
 const calculateDistance = (x1, y1, x2, y2) => {
   const dx = x2 - x1;
   const dy = y2 - y1;
   return Math.sqrt(dx * dx + dy * dy);
 };
 
-/**
- * Determine contest level based on defender distance
- * Research-based thresholds:
- * - TIGHT: ≤ 3 ft (hand-in-face defense)
- * - CONTESTED: 3-6 ft (active closeout)
- * - OPEN: 6-10 ft (late rotation)
- * - WIDE_OPEN: > 10 ft (uncontested)
- */
+
 const getContestLevel = (distance) => {
   if (distance === null || distance === undefined) return 'OPEN';
   if (distance <= 3) return 'TIGHT';
@@ -29,15 +20,10 @@ const getContestLevel = (distance) => {
   return 'WIDE_OPEN';
 };
 
-/**
- * Interactive NBA half-court (SVG).
- * - 1st click: Place shooter (blue)
- * - 2nd click: Place defender (red)
- * - 3rd click: Reset both
- */
+
 function Court({ onShotSelected }) {
-  const SVG_WIDTH = 500;   // px
-  const SVG_HEIGHT = 470;  // px
+  const SVG_WIDTH = 500;
+  const SVG_HEIGHT = 470;
 
   const [shooterMarker, setShooterMarker] = useState(null);
   const [defenderMarker, setDefenderMarker] = useState(null);
@@ -48,16 +34,16 @@ function Court({ onShotSelected }) {
     const xPx = e.clientX - rect.left;
     const yPx = e.clientY - rect.top;
 
-    // Map x [0, W] → LOC_X [-25, 25] ft
+
     const locX = (xPx / SVG_WIDTH) * COURT_WIDTH_FT - COURT_WIDTH_FT / 2;
 
-    // Map y [0, H] (top→bottom) → LOC_Y [0, 50] ft (basket at y=0)
+
     const locY = ((SVG_HEIGHT - yPx) / SVG_HEIGHT) * COURT_LENGTH_FT;
 
     if (clickCount === 0) {
-      // First click: Place shooter
+
       const shotDistance = Math.sqrt(locX * locX + locY * locY);
-      
+
       setShooterMarker({ x: xPx, y: yPx, locX, locY });
       setDefenderMarker(null);
       setClickCount(1);
@@ -72,21 +58,21 @@ function Court({ onShotSelected }) {
         });
       }
     } else if (clickCount === 1) {
-      // Second click: Place defender
+
       setDefenderMarker({ x: xPx, y: yPx, locX, locY });
       setClickCount(2);
 
-      // Calculate defender distance to shooter
+
       const defenderDistance = calculateDistance(
         shooterMarker.locX,
         shooterMarker.locY,
         locX,
         locY
       );
-      
+
       const contestLevel = getContestLevel(defenderDistance);
       const shotDistance = Math.sqrt(
-        shooterMarker.locX * shooterMarker.locX + 
+        shooterMarker.locX * shooterMarker.locX +
         shooterMarker.locY * shooterMarker.locY
       );
 
@@ -102,7 +88,7 @@ function Court({ onShotSelected }) {
         });
       }
     } else {
-      // Third click: Reset
+
       setShooterMarker(null);
       setDefenderMarker(null);
       setClickCount(0);
@@ -133,7 +119,7 @@ function Court({ onShotSelected }) {
         onClick={handleClick}
         className="court-svg"
       >
-        {/* Court background - wood texture gradient */}
+        {}
         <defs>
           <linearGradient id="woodGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style={{ stopColor: '#d4a574', stopOpacity: 1 }} />
@@ -154,7 +140,7 @@ function Court({ onShotSelected }) {
           strokeWidth="5"
         />
 
-        {/* Half-court line */}
+        {}
         <line
           x1="0"
           y1="0"
@@ -165,7 +151,7 @@ function Court({ onShotSelected }) {
           opacity="0.9"
         />
 
-        {/* Paint (key) */}
+        {}
         <rect
           x={SVG_WIDTH / 2 - (16 * (SVG_WIDTH / COURT_WIDTH_FT)) / 2}
           y={SVG_HEIGHT - (19 * (SVG_HEIGHT / COURT_LENGTH_FT))}
@@ -177,7 +163,7 @@ function Court({ onShotSelected }) {
           opacity="0.9"
         />
 
-        {/* Free throw circle */}
+        {}
         <circle
           cx={SVG_WIDTH / 2}
           cy={SVG_HEIGHT - (19 * (SVG_HEIGHT / COURT_LENGTH_FT))}
@@ -188,7 +174,7 @@ function Court({ onShotSelected }) {
           opacity="0.9"
         />
 
-        {/* Restricted area arc */}
+        {}
         <path
           d={describeArc(
             basketX,
@@ -203,7 +189,7 @@ function Court({ onShotSelected }) {
           opacity="0.9"
         />
 
-        {/* Basket - with backboard */}
+        {}
         <rect
           x={basketX - 25}
           y={basketY - 3}
@@ -229,7 +215,7 @@ function Court({ onShotSelected }) {
           fill="#ff6b35"
         />
 
-        {/* Three-point arc */}
+        {}
         <path
           d={describeArc(
             basketX,
@@ -243,7 +229,7 @@ function Court({ onShotSelected }) {
           strokeWidth="2.5"
           opacity="0.9"
         />
-        {/* Three-point corner lines */}
+        {}
         <line
           x1="30"
           y1={basketY - threePointRadiusPx * 0.75}
@@ -263,7 +249,7 @@ function Court({ onShotSelected }) {
           opacity="0.9"
         />
 
-        {/* Baseline */}
+        {}
         <line
           x1="0"
           y1={SVG_HEIGHT}
@@ -273,7 +259,7 @@ function Court({ onShotSelected }) {
           strokeWidth="5"
         />
 
-        {/* Connection line between shooter and defender */}
+        {}
         {shooterMarker && defenderMarker && (
           <>
             <line
@@ -286,8 +272,8 @@ function Court({ onShotSelected }) {
               strokeDasharray="8,4"
               opacity="0.7"
             />
-            
-            {/* Distance label with background */}
+
+            {}
             <rect
               x={(shooterMarker.x + defenderMarker.x) / 2 - 30}
               y={(shooterMarker.y + defenderMarker.y) / 2 - 22}
@@ -317,7 +303,7 @@ function Court({ onShotSelected }) {
           </>
         )}
 
-        {/* Shooter marker */}
+        {}
         {shooterMarker && (
           <>
             <circle
@@ -360,7 +346,7 @@ function Court({ onShotSelected }) {
           </>
         )}
 
-        {/* Defender marker */}
+        {}
         {defenderMarker && (
           <>
             <circle
@@ -403,14 +389,14 @@ function Court({ onShotSelected }) {
           </>
         )}
       </svg>
-      
+
       <div className="court-hint">
         {clickCount === 0 && "Click to place shooter (blue)"}
         {clickCount === 1 && "Click to place defender (red)"}
         {clickCount === 2 && "Click anywhere to reset"}
       </div>
-      
-      {/* Contest level indicator */}
+
+      {}
       {shooterMarker && defenderMarker && (
         <div className={`contest-indicator ${getContestLevel(calculateDistance(
           shooterMarker.locX, shooterMarker.locY,
@@ -426,7 +412,7 @@ function Court({ onShotSelected }) {
   );
 }
 
-/* Helpers for SVG arc (3PT line) */
+
 function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
   const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
   return {

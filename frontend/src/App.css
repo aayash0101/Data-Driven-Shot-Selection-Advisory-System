@@ -1,4 +1,4 @@
-/* App.css - Updated with Shot Quality Breakdown styles */
+
 
 * {
   margin: 0;
@@ -266,7 +266,7 @@ body {
   line-height: 1.6;
 }
 
-/* NEW: Shot Quality Breakdown Styles */
+
 .quality-breakdown {
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   padding: 1.5rem;
@@ -357,12 +357,12 @@ body {
   font-style: italic;
 }
 
-/* Responsive Design */
+
 @media (max-width: 1024px) {
   .container {
     grid-template-columns: 1fr;
   }
-  
+
   .metrics {
     grid-template-columns: 1fr;
   }
@@ -372,21 +372,21 @@ body {
   .App-header h1 {
     font-size: 1.8rem;
   }
-  
+
   .App-header p {
     font-size: 0.95rem;
   }
-  
+
   .container {
     padding: 1rem;
     gap: 1rem;
   }
-  
+
   .input-panel,
   .result-panel {
     padding: 1.5rem;
   }
-  
+
   .decision {
     font-size: 1.5rem;
     padding: 1.5rem;

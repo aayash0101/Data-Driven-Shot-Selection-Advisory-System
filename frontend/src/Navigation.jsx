@@ -4,20 +4,26 @@ import './Navigation.css';
 
 function Navigation() {
   const location = useLocation();
-  
+
   return (
     <nav className="main-nav">
       <div className="nav-container">
         <div className="nav-brand">🏀 NBA Shot Analytics</div>
         <div className="nav-links">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className={location.pathname === '/' ? 'nav-link active' : 'nav-link'}
           >
             Advisor
           </Link>
-          <Link 
-            to="/shot-chart" 
+          <Link
+            to="/session"
+            className={location.pathname === '/session' ? 'nav-link active' : 'nav-link'}
+          >
+            Session
+          </Link>
+          <Link
+            to="/shot-chart"
             className={location.pathname === '/shot-chart' ? 'nav-link active' : 'nav-link'}
           >
             Shot Chart
